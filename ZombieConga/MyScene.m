@@ -8,16 +8,34 @@
 
 #import "MyScene.h"
 
+// math helpers
+static inline CGPoint CGPointAdd(const CGPoint a, const CGPoint b){
+    return CGPointMake(a.x + b.x, a.y + b.y);
+}
+static inline CGPoint CGPointSubtract(const CGPoint a, const CGPoint b){
+    return CGPointMake(a.x - b.x, a.y - b.y);
+}
+static inline CGPoint CGPointMultiplyScalar(const CGPoint a, const CGFloat b){
+    return CGPointMake(a.x * b, a.y * b);
+}
+static inline CGFloat CGPointLength(const CGPoint a) {
+    return sqrtf(a.x * a.x + a.y * a.y);
+}
+static inline CGPoint CGPointNormalize(const CGPoint a) {
+    CGFloat length = CGPointLength(a);
+    return CGPointMake(a.x / length, a.y / length);
+}
+static inline CGFloat CGPointToAngle(const CGPoint a) {
+    return atan2f(a.y, a.x);
+}
+
 static CGFloat const kZombieMovePointsPerSec = 120;
 
 @interface MyScene()
-// sprite nodes
 @property (weak, nonatomic) SKSpriteNode *zombie; // views should be weak because self.subviews points to them
 @property (weak, nonatomic) SKSpriteNode *bg;
-// time intervals
 @property (nonatomic) NSTimeInterval lastUpdateTime;
 @property (nonatomic) NSTimeInterval deltaTime;
-// velocity
 @property (nonatomic) CGPoint velocity; // point representing a vector
 @end
 
@@ -102,21 +120,21 @@ static CGFloat const kZombieMovePointsPerSec = 120;
 - (void)moveSprite:(SKSpriteNode *)sprite withVelocity:(CGPoint)velocity
 {
     // position = dx/dt * deltatime
-    CGPoint amountToMove = CGPointMake(velocity.x*self.deltaTime, velocity.y*self.deltaTime);
-    sprite.position = CGPointMake(sprite.position.x+amountToMove.x, sprite.position.y+amountToMove.y);
+    CGPoint amountToMove = CGPointMultiplyScalar(velocity, self.deltaTime);
+    sprite.position = CGPointAdd(sprite.position, amountToMove);
 }
 
 - (void)rotatoSprite:(SKSpriteNode *)sprite toFace:(CGPoint)direction
 {
-    sprite.zRotation = atan2(direction.y, direction.x);
+    sprite.zRotation = CGPointToAngle(direction);
 }
 
 - (void)moveZombieToward:(CGPoint)location
 {
-    CGPoint offset = CGPointMake(location.x-self.zombie.position.x, location.y-self.zombie.position.y);// direction with rando velocity
-    CGFloat magnitude = sqrtf(offset.x*offset.x + offset.y*offset.y); // rando velocity
-    CGPoint direction = CGPointMake(offset.x/magnitude, offset.y/magnitude); // normalized vector
-    self.velocity = CGPointMake(direction.x*kZombieMovePointsPerSec, direction.y*kZombieMovePointsPerSec); // apply velocity
+    
+    CGPoint offset = CGPointSubtract(location, self.zombie.position);;// direction with rando velocity
+    CGPoint direction = CGPointNormalize(offset); // normalized vector...use unit of 1
+    self.velocity = CGPointMultiplyScalar(direction, kZombieMovePointsPerSec); // apply velocity scaler
 }
 
 - (void)boundsCheckPlayer
