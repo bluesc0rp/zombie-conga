@@ -53,18 +53,6 @@ static CGFloat const kZombieMovePointsPerSec = 120;
     return self;
 }
 
-# pragma mark - SpriteKit frame updates
-
-- (void)update:(NSTimeInterval)currentTime
-{
-    // update timers
-    self.deltaTime = self.lastUpdateTime ? currentTime-self.lastUpdateTime : 0;
-    self.lastUpdateTime = currentTime;
-    
-    // move zombay
-    [self moveSprite:self.zombie withVelocity:self.velocity];
-}
-
 # pragma mark - touch handlers
 
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
@@ -86,6 +74,19 @@ static CGFloat const kZombieMovePointsPerSec = 120;
     UITouch *touch = [touches anyObject];
     CGPoint touchLocation = [touch locationInNode:self];
     [self moveZombieToward:touchLocation];
+}
+
+# pragma mark - SpriteKit frame updates
+
+- (void)update:(NSTimeInterval)currentTime
+{
+    // update timers
+    self.deltaTime = self.lastUpdateTime ? currentTime-self.lastUpdateTime : 0;
+    self.lastUpdateTime = currentTime;
+    
+    // move zombay
+    [self moveSprite:self.zombie withVelocity:self.velocity];
+    [self boundsCheckPlayer];
 }
 
 # pragma mark - helpers
@@ -110,6 +111,19 @@ static CGFloat const kZombieMovePointsPerSec = 120;
     CGFloat magnitude = sqrtf(offset.x*offset.x + offset.y*offset.y); // rando velocity
     CGPoint direction = CGPointMake(offset.x/magnitude, offset.y/magnitude); // normalized vector
     self.velocity = CGPointMake(direction.x*kZombieMovePointsPerSec, direction.y*kZombieMovePointsPerSec); // apply velocity
+}
+
+- (void)boundsCheckPlayer
+{
+    CGPoint newVelocity = self.velocity;
+    if (self.zombie.position.x>=self.size.width || self.zombie.position.x<=0) {
+        newVelocity.x = -newVelocity.x;
+    }
+    if (self.zombie.position.y>=self.size.height || self.zombie.position.y<=0) {
+        newVelocity.y = -newVelocity.y;
+    }
+    self.velocity = newVelocity;
+    // also hold zombie to position?
 }
 
 @end
