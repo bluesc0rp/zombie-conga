@@ -37,6 +37,7 @@ static CGFloat const kZombieMovePointsPerSec = 120;
 @property (nonatomic) NSTimeInterval lastUpdateTime;
 @property (nonatomic) NSTimeInterval deltaTime;
 @property (nonatomic) CGPoint velocity; // point representing a vector
+@property (nonatomic) CGPoint lastTouched;
 @end
 
 @implementation MyScene
@@ -75,23 +76,17 @@ static CGFloat const kZombieMovePointsPerSec = 120;
 
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    UITouch *touch = [touches anyObject];
-    CGPoint touchLocation = [touch locationInNode:self];
-    [self moveZombieToward:touchLocation];
+    [self handleTouch:[touches anyObject]];
 }
 
 -(void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    UITouch *touch = [touches anyObject];
-    CGPoint touchLocation = [touch locationInNode:self];
-    [self moveZombieToward:touchLocation];
+    [self handleTouch:[touches anyObject]];
 }
 
 -(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    UITouch *touch = [touches anyObject];
-    CGPoint touchLocation = [touch locationInNode:self];
-    [self moveZombieToward:touchLocation];
+    [self handleTouch:[touches anyObject]];
 }
 
 # pragma mark - SpriteKit frame updates
@@ -103,9 +98,9 @@ static CGFloat const kZombieMovePointsPerSec = 120;
     self.lastUpdateTime = currentTime;
     
     // move zombay
-    [self moveSprite:self.zombie withVelocity:self.velocity];
-    [self boundsCheckPlayer];
-    [self rotatoSprite:self.zombie toFace:self.velocity];
+    if (![self stopZombie]) {
+        [self moveSprite:self.zombie withVelocity:self.velocity];
+    }
 }
 
 # pragma mark - helpers
@@ -117,11 +112,21 @@ static CGFloat const kZombieMovePointsPerSec = 120;
     [self addChild:self.zombie];
 }
 
+- (void)handleTouch:(UITouch *)touch
+{
+    CGPoint touchLocation = [touch locationInNode:self];
+    self.lastTouched = touchLocation;
+    [self moveZombieToward:touchLocation];
+}
+
 - (void)moveSprite:(SKSpriteNode *)sprite withVelocity:(CGPoint)velocity
 {
     // position = dx/dt * deltatime
     CGPoint amountToMove = CGPointMultiplyScalar(velocity, self.deltaTime);
     sprite.position = CGPointAdd(sprite.position, amountToMove);
+    [self rotatoSprite:sprite toFace:velocity];
+    [self boundsCheckPlayer];
+
 }
 
 - (void)rotatoSprite:(SKSpriteNode *)sprite toFace:(CGPoint)direction
@@ -131,10 +136,22 @@ static CGFloat const kZombieMovePointsPerSec = 120;
 
 - (void)moveZombieToward:(CGPoint)location
 {
-    
     CGPoint offset = CGPointSubtract(location, self.zombie.position);;// direction with rando velocity
     CGPoint direction = CGPointNormalize(offset); // normalized vector...use unit of 1
     self.velocity = CGPointMultiplyScalar(direction, kZombieMovePointsPerSec); // apply velocity scaler
+}
+
+- (BOOL)stopZombie
+{
+    CGPoint distToStop = CGPointSubtract(self.lastTouched, self.zombie.position);
+    CGPoint zombieMove = CGPointMultiplyScalar(self.velocity, self.deltaTime);
+    CGFloat toStopLength = CGPointLength(distToStop);
+    CGFloat toMoveLength = CGPointLength(zombieMove);
+    if (toStopLength < toMoveLength) {
+        self.velocity = CGPointZero;
+        self.zombie.position = self.lastTouched;
+    }
+    return NO;
 }
 
 - (void)boundsCheckPlayer
