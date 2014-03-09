@@ -87,6 +87,7 @@ static CGFloat const kZombieMovePointsPerSec = 120;
     // move zombay
     [self moveSprite:self.zombie withVelocity:self.velocity];
     [self boundsCheckPlayer];
+    [self rotatoSprite:self.zombie toFace:self.velocity];
 }
 
 # pragma mark - helpers
@@ -103,6 +104,11 @@ static CGFloat const kZombieMovePointsPerSec = 120;
     // position = dx/dt * deltatime
     CGPoint amountToMove = CGPointMake(velocity.x*self.deltaTime, velocity.y*self.deltaTime);
     sprite.position = CGPointMake(sprite.position.x+amountToMove.x, sprite.position.y+amountToMove.y);
+}
+
+- (void)rotatoSprite:(SKSpriteNode *)sprite toFace:(CGPoint)direction
+{
+    sprite.zRotation = atan2(direction.y, direction.x);
 }
 
 - (void)moveZombieToward:(CGPoint)location
