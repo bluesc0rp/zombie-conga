@@ -8,6 +8,12 @@
 
 #import "MyScene.h"
 
+#define ARC4RANDOM_MAX 0x100000000
+static inline CGFloat ScalarRandomRange(CGFloat min, CGFloat max)
+{
+    return floorf(((double)arc4random() / ARC4RANDOM_MAX) * (max - min) + min);
+}
+
 static inline CGPoint CGPointAdd(const CGPoint a,
                                  const CGPoint b)
 {
@@ -90,7 +96,13 @@ static const float ZOMBIE_ROTATE_RADIANS_PER_SEC = 4 * M_PI;
         _zombie.position = CGPointMake(100, 100);
         [self addChild:_zombie];
         
-        [self spawnEnemy];
+        [self runAction:[SKAction repeatActionForever:
+                         [SKAction sequence:@[
+                            [SKAction performSelector:@selector(spawnEnemy) onTarget:self], [SKAction waitForDuration:2.0]
+                            ]
+                          ]
+                         ]
+         ];
         
     }
     return self;
@@ -222,14 +234,26 @@ static const float ZOMBIE_ROTATE_RADIANS_PER_SEC = 4 * M_PI;
 - (void)spawnEnemy
 {
     SKSpriteNode *enemy = [SKSpriteNode spriteNodeWithImageNamed:@"enemy"];
-    enemy.position = CGPointMake(self.size.width+enemy.size.width/2, self.size.height/2);
+    enemy.position = CGPointMake(self.size.width+enemy.size.width/2, ScalarRandomRange(self.size.height/2, self.size.height-enemy.size.height/2));
     [self addChild:enemy];
-    SKAction *actionMidMove = [SKAction moveTo:CGPointMake(self.size.width/2, enemy.size.height/2) duration:1.0];
-    SKAction *waitAction = [SKAction waitForDuration:0.25f];
-    SKAction *logMessage = [SKAction runBlock:^{ NSLog(@"you take my breath away"); }];
-    SKAction *actionMove = [SKAction moveTo:CGPointMake(-enemy.size.width/2, enemy.position.y) duration:1.0];
-    SKAction *sequence = [SKAction sequence:@[actionMidMove, waitAction, logMessage, actionMove]];
-    [enemy runAction:sequence];
+    SKAction *actionMove = [SKAction moveToX:-enemy.size.width/2 duration:2.0];
+    [enemy runAction:actionMove];
+    
+//    [self addChild:enemy];
+//    SKAction *actionMidMove = [SKAction moveByX:-self.size.width/2-enemy.size.width/2
+//                                              y:-self.size.height/2+enemy.size.height/2
+//                                       duration:1.0];
+////    SKAction *actionMidMove = [SKAction moveTo:CGPointMake(self.size.width/2, enemy.size.height/2) duration:1.0];
+//    SKAction *waitAction = [SKAction waitForDuration:0.25f];
+//    SKAction *logMessage = [SKAction runBlock:^{ NSLog(@"you take my breath away"); }];
+//    SKAction *actionMove = [SKAction moveByX:-self.size.width/2-enemy.size.width/2
+//                                           y:self.size.height/2+enemy.size.height/2
+//                                    duration:1.0];
+////    SKAction *actionMove = [SKAction moveTo:CGPointMake(-enemy.size.width/2, enemy.position.y) duration:1.0];
+//    SKAction *sequence = [SKAction sequence:@[actionMidMove, waitAction, logMessage, actionMove]];
+//    sequence = [SKAction sequence:@[sequence, [sequence reversedAction]]];
+//    
+//    [enemy runAction:[SKAction repeatActionForever:sequence]];
 }
 
 @end
